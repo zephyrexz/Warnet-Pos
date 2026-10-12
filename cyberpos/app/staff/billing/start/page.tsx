@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast"
 import { createClient } from "@/lib/supabase/client"
 import { formatCurrency } from "@/lib/utils"
 
-export default function StartBillingPage() {
+function StartBillingForm() {
   const [loading, setLoading] = useState(false)
   const [computers, setComputers] = useState<any[]>([])
   const [customers, setCustomers] = useState<any[]>([])
@@ -210,5 +210,13 @@ export default function StartBillingPage() {
         </Card>
       </main>
     </div>
+  )
+}
+
+export default function StartBillingPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading...</div>}>
+      <StartBillingForm />
+    </Suspense>
   )
 }
