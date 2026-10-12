@@ -24,7 +24,6 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
-  const supabase = createClient()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -50,6 +49,7 @@ export default function RegisterPage() {
     setLoading(true)
 
     try {
+      const supabase = createClient()
       // Check username uniqueness
       const { data: existingUser } = await supabase
         .from('profiles')
