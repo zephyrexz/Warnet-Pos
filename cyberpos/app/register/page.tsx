@@ -10,6 +10,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from "@/hooks/use-toast"
 import { createClient } from "@/lib/supabase/client"
 
+export const dynamic = 'force-dynamic'
+
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
     fullName: "",
