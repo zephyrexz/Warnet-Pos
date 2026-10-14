@@ -33,8 +33,14 @@ export async function middleware(request: NextRequest) {
         .eq('id', user.id)
         .maybeSingle()
 
-      if (profile?.role === 'CUSTOMER') {
+      const role = profile?.role
+      
+      if (role === 'CUSTOMER') {
         return NextResponse.redirect(new URL('/customer/dashboard', request.url))
+      } else if (role === 'CASHIER') {
+        return NextResponse.redirect(new URL('/cashier/dashboard', request.url))
+      } else if (role === 'OWNER' || role === 'ADMIN') {
+        return NextResponse.redirect(new URL('/admin/dashboard', request.url))
       }
       return NextResponse.redirect(new URL('/staff/dashboard', request.url))
     }
@@ -57,15 +63,48 @@ export async function middleware(request: NextRequest) {
   // Customer routes - CUSTOMER only
   if (path.startsWith('/customer')) {
     if (role !== 'CUSTOMER') {
+      return NextResponse.redirect(new URL(role === 'CASHIER' ? '/cashier/dashboard' : '/admin/dashboard', request.url))
+    }
+    return response
+  }
+
+  // Cashier routes - CASHIER only
+  if (path.startsWith('/cashier')) {
+    if (role !== 'CASHIER') {
+      if (role === 'CUSTOMER') {
+        return NextResponse.redirect(new URL('/customer/dashboard', request.url))
+      }
+      if (role === 'OWNER' || role === 'ADMIN') {
+        return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+      }
+    }
+    return response
+  }
+
+  // Admin routes - OWNER and ADMIN only
+  if (path.startsWith('/admin')) {
+    if (role !== 'OWNER' && role !== 'ADMIN') {
+      if (role === 'CUSTOMER') {
+        return NextResponse.redirect(new URL('/customer/dashboard', request.url))
+      }
+      if (role === 'CASHIER') {
+        return NextResponse.redirect(new URL('/cashier/dashboard', request.url))
+      }
       return NextResponse.redirect(new URL('/staff/dashboard', request.url))
     }
     return response
   }
 
-  // Staff routes - OWNER, ADMIN, CASHIER, TECHNICIAN
+  // Legacy staff routes - redirect to appropriate area
   if (path.startsWith('/staff')) {
-    if (role === 'CUSTOMER' || !role) {
+    if (role === 'CUSTOMER') {
       return NextResponse.redirect(new URL('/customer/dashboard', request.url))
+    }
+    if (role === 'CASHIER') {
+      return NextResponse.redirect(new URL('/cashier/dashboard', request.url))
+    }
+    if (role === 'OWNER' || role === 'ADMIN') {
+      return NextResponse.redirect(new URL('/admin/dashboard', request.url))
     }
     return response
   }
