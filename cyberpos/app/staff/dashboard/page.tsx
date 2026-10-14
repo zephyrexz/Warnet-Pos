@@ -69,176 +69,170 @@ export default async function StaffDashboard() {
     .order('started_at', { ascending: false })
     .limit(5)
 
+  const isOwnerOrAdmin = profile?.role === 'OWNER' || profile?.role === 'ADMIN'
+
   return (
-    <div className="min-h-screen bg-slate-50">
-      <nav className="border-b bg-white">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-6">
-            <Link href="/staff/dashboard" className="text-xl font-bold text-blue-600">
-              CyberPOS
-            </Link>
-            <div className="flex gap-4 text-sm">
-              <Link href="/staff/dashboard" className="font-medium text-slate-900">
-                Dashboard
-              </Link>
-              <Link href="/staff/computers" className="text-slate-600 hover:text-slate-900">
-                Komputer
-              </Link>
-              <Link href="/staff/billing" className="text-slate-600 hover:text-slate-900">
-                Billing
-              </Link>
-              <Link href="/staff/pos" className="text-slate-600 hover:text-slate-900">
-                POS
-              </Link>
-              <Link href="/staff/products" className="text-slate-600 hover:text-slate-900">
-                Produk
-              </Link>
+    <>
+      <main className="container mx-auto p-4 md:p-6 lg:p-8">
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Dashboard</h2>
+          {isOwnerOrAdmin && (
+            <div className="flex flex-wrap gap-2">
+              <Button asChild variant="outline" size="sm" className="shadow-sm">
+                <Link href="/staff/plans">
+                  <Package className="mr-2 h-4 w-4" />
+                  Paket Billing
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="sm" className="shadow-sm">
+                <Link href="/staff/users">
+                  <Users className="mr-2 h-4 w-4" />
+                  Users
+                </Link>
+              </Button>
             </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-medium">{profile?.full_name}</span>
-            <span className="rounded-full bg-blue-100 px-3 py-1 text-xs text-blue-700">
-              {profile?.role}
-            </span>
-            <form action="/api/auth/logout" method="POST">
-              <button className="text-sm text-slate-600 hover:text-slate-900">
-                Keluar
-              </button>
-            </form>
-          </div>
-        </div>
-      </nav>
-
-      <main className="container mx-auto p-4">
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-2xl font-bold">Dashboard</h2>
-          <div className="flex gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link href="/staff/plans">
-                <Package className="mr-2 h-4 w-4" />
-                Paket Billing
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="sm">
-              <Link href="/staff/users">
-                <Users className="mr-2 h-4 w-4" />
-                Users
-              </Link>
-            </Button>
-          </div>
+          )}
         </div>
 
-        <div className="mb-6 grid gap-4 md:grid-cols-4">
-          <Card>
+        <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-blue-50">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Komputer</CardTitle>
-              <Computer className="h-4 w-4 text-muted-foreground" />
+              <div className="rounded-full bg-blue-100 p-2">
+                <Computer className="h-4 w-4 text-blue-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalComputers}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-2xl font-bold text-slate-900">{totalComputers}</div>
+              <p className="text-xs text-slate-600 mt-1">
                 {availableComputers} tersedia
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-green-50">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Komputer Digunakan</CardTitle>
-              <Computer className="h-4 w-4 text-green-600" />
+              <div className="rounded-full bg-green-100 p-2">
+                <Computer className="h-4 w-4 text-green-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{inUseComputers}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-2xl font-bold text-slate-900">{inUseComputers}</div>
+              <p className="text-xs text-slate-600 mt-1">
                 {activeSessions} sesi aktif
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-purple-50">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Pendapatan Hari Ini</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <div className="rounded-full bg-purple-100 p-2">
+                <TrendingUp className="h-4 w-4 text-purple-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(todayRevenue)}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-2xl font-bold text-slate-900">{formatCurrency(todayRevenue)}</div>
+              <p className="text-xs text-slate-600 mt-1">
                 {todaySales?.length || 0} transaksi
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-orange-50">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Stok Rendah</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-orange-600" />
+              <div className="rounded-full bg-orange-100 p-2">
+                <AlertTriangle className="h-4 w-4 text-orange-600" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{lowStockProducts?.length || 0}</div>
-              <p className="text-xs text-muted-foreground">Produk perlu restock</p>
+              <div className="text-2xl font-bold text-slate-900">{lowStockProducts?.length || 0}</div>
+              <p className="text-xs text-slate-600 mt-1">Produk perlu restock</p>
             </CardContent>
           </Card>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card className="border-0 shadow-lg">
             <CardHeader>
-              <CardTitle>Sesi Aktif</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center">
+                  <Computer className="h-4 w-4 text-green-600" />
+                </div>
+                Sesi Aktif
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {recentSessions && recentSessions.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {recentSessions.map((session: any) => (
-                    <div key={session.id} className="flex items-center justify-between rounded-lg border p-3">
+                    <div key={session.id} className="flex items-center justify-between rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border p-3 shadow-sm">
                       <div>
-                        <p className="font-medium">{session.computers?.name}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="font-semibold text-slate-900">{session.computers?.name}</p>
+                        <p className="text-sm text-slate-600">
                           {session.profiles?.full_name || 'Walk-in'}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-slate-500">
                           Mulai: {new Date(session.started_at).toLocaleTimeString('id-ID')}
                         </p>
                       </div>
-                      <span className="rounded-full bg-green-100 px-2 py-1 text-xs text-green-700">
+                      <span className="rounded-full bg-green-500 px-2.5 py-1 text-xs font-medium text-white shadow-sm">
                         Aktif
                       </span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-center text-sm text-muted-foreground">Tidak ada sesi aktif</p>
+                <div className="text-center py-8">
+                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 mb-2">
+                    <Computer className="h-6 w-6 text-slate-400" />
+                  </div>
+                  <p className="text-sm text-slate-500">Tidak ada sesi aktif</p>
+                </div>
               )}
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-0 shadow-lg">
             <CardHeader>
-              <CardTitle>Stok Rendah</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-orange-100 flex items-center justify-center">
+                  <AlertTriangle className="h-4 w-4 text-orange-600" />
+                </div>
+                Stok Rendah
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {lowStockProducts && lowStockProducts.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {lowStockProducts.map((product: any) => (
-                    <div key={product.name} className="flex items-center justify-between rounded-lg border p-3">
+                    <div key={product.name} className="flex items-center justify-between rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 border p-3 shadow-sm">
                       <div>
-                        <p className="font-medium">{product.name}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="font-semibold text-slate-900">{product.name}</p>
+                        <p className="text-sm text-slate-600">
                           Stok: {product.stock} / Min: {product.min_stock}
                         </p>
                       </div>
-                      <span className="rounded-full bg-orange-100 px-2 py-1 text-xs text-orange-700">
+                      <span className="rounded-full bg-orange-500 px-2.5 py-1 text-xs font-medium text-white shadow-sm">
                         Rendah
                       </span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-center text-sm text-muted-foreground">Semua produk stok aman</p>
+                <div className="text-center py-8">
+                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-green-100 mb-2">
+                    <Package className="h-6 w-6 text-green-600" />
+                  </div>
+                  <p className="text-sm text-slate-500">Semua produk stok aman</p>
+                </div>
               )}
             </CardContent>
           </Card>
         </div>
       </main>
-    </div>
+    </>
   )
 }
