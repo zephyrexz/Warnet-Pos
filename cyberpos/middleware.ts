@@ -24,9 +24,11 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
 
-  // Public routes
-  if (path === '/' || path === '/login' || path === '/register') {
-    if (user) {
+  // Public routes - allow access without login
+  const publicRoutes = ['/', '/login', '/register']
+  if (publicRoutes.includes(path)) {
+    // If user is logged in and tries to access public routes, redirect to dashboard
+    if (user && (path === '/login' || path === '/register')) {
       const { data: profile } = await supabase
         .from('profiles')
         .select('role')
