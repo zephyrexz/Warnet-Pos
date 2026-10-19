@@ -67,19 +67,9 @@ export default function RegisterPage() {
       if (error) throw error
       if (!data.user) throw new Error('Registrasi gagal')
 
-      // Create profile with CUSTOMER role via RPC
-      const { error: rpcError } = await supabase.rpc('create_user_profile', {
-        user_id: data.user.id,
-        user_email: formData.email,
-        user_full_name: formData.fullName,
-        user_username: formData.username,
-        user_phone: formData.phone || null
-      })
-
-      if (rpcError) {
-        console.error('Profile creation error:', rpcError)
-        throw new Error('Gagal membuat profil pengguna: ' + rpcError.message)
-      }
+      // Profile created automatically by trigger handle_new_user()
+      // Wait for trigger to complete
+      await new Promise(resolve => setTimeout(resolve, 500))
 
       toast({
         title: "Registrasi berhasil",
@@ -111,7 +101,9 @@ export default function RegisterPage() {
       toast({
         variant: "destructive",
         title: "Registrasi gagal",
-        description: errorMessage,
+        description: errorMessage.includes('foreign key') 
+          ? "Terjadi kesalahan sistem. Silakan coba lagi." 
+          : errorMessage,
       })
     } finally {
       setLoading(false)
