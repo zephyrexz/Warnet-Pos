@@ -13,9 +13,10 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          response = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set(name, value)
+            response.cookies.set(name, value, options)
+          })
         },
       },
     }
@@ -44,7 +45,7 @@ export async function middleware(request: NextRequest) {
       } else if (role === 'OWNER' || role === 'ADMIN') {
         return NextResponse.redirect(new URL('/admin/dashboard', request.url))
       }
-      return NextResponse.redirect(new URL('/staff/dashboard', request.url))
+      // If no valid role, stay on login/register page
     }
     return response
   }
@@ -92,7 +93,7 @@ export async function middleware(request: NextRequest) {
       if (role === 'CASHIER') {
         return NextResponse.redirect(new URL('/cashier/dashboard', request.url))
       }
-      return NextResponse.redirect(new URL('/staff/dashboard', request.url))
+      return NextResponse.redirect(new URL('/login', request.url))
     }
     return response
   }
@@ -108,7 +109,7 @@ export async function middleware(request: NextRequest) {
     if (role === 'OWNER' || role === 'ADMIN') {
       return NextResponse.redirect(new URL('/admin/dashboard', request.url))
     }
-    return response
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
   return response

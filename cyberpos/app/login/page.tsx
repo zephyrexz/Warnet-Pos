@@ -39,20 +39,38 @@ export default function LoginPage() {
         .eq('id', data.user.id)
         .maybeSingle()
 
-      if (profileError) console.warn('Profile error:', profileError)
+      if (profileError) {
+        console.warn('Profile error:', profileError)
+        // Continue with login even if profile query fails
+      }
 
       toast({
         title: "Login berhasil",
         description: "Anda akan dialihkan...",
       })
 
+      // Refresh router to ensure session is available
+      router.refresh()
+
+      // Small delay to ensure cookie propagation
+      await new Promise(resolve => setTimeout(resolve, 100))
+
       // Redirect based on role
       if (profile?.role === 'CUSTOMER') {
         router.push('/customer/dashboard')
-      } else if (profile?.role) {
-        router.push('/staff/dashboard')
+      } else if (profile?.role === 'CASHIER') {
+        router.push('/cashier/dashboard')
+      } else if (profile?.role === 'OWNER' || profile?.role === 'ADMIN') {
+        router.push('/admin/dashboard')
       } else {
-        router.push('/customer/dashboard') // fallback
+        // No valid role found, redirect to login
+        toast({
+          variant: "destructive",
+          title: "Profil tidak valid",
+          description: "Akun Anda belum memiliki role yang valid",
+        })
+        await supabase.auth.signOut()
+        router.push('/login')
       }
     } catch (error: any) {
       toast({
