@@ -40,8 +40,38 @@ export default function LoginPage() {
         .maybeSingle()
 
       if (profileError) {
-        console.warn('Profile error:', profileError)
-        // Continue with login even if profile query fails
+        console.error('Profile query error:', profileError)
+        toast({
+          variant: "destructive",
+          title: "Kesalahan sistem",
+          description: "Gagal mengambil data profil. Silakan coba lagi.",
+        })
+        await supabase.auth.signOut()
+        return
+      }
+
+      if (!profile) {
+        console.error('Profile not found for user:', data.user.id)
+        toast({
+          variant: "destructive",
+          title: "Profil tidak ditemukan",
+          description: "Akun Anda belum memiliki profil. Silakan hubungi administrator.",
+        })
+        await supabase.auth.signOut()
+        return
+      }
+
+      const role = profile.role
+
+      if (!role || !['CUSTOMER', 'CASHIER', 'ADMIN', 'OWNER', 'TECHNICIAN'].includes(role)) {
+        console.error('Invalid role for user:', data.user.id, 'role:', role)
+        toast({
+          variant: "destructive",
+          title: "Role tidak valid",
+          description: "Role akun Anda tidak dikenali. Silakan hubungi administrator.",
+        })
+        await supabase.auth.signOut()
+        return
       }
 
       toast({
@@ -56,21 +86,14 @@ export default function LoginPage() {
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Redirect based on role
-      if (profile?.role === 'CUSTOMER') {
+      if (role === 'CUSTOMER') {
         router.push('/customer/dashboard')
-      } else if (profile?.role === 'CASHIER') {
+      } else if (role === 'CASHIER') {
         router.push('/cashier/dashboard')
-      } else if (profile?.role === 'OWNER' || profile?.role === 'ADMIN') {
+      } else if (role === 'OWNER' || role === 'ADMIN') {
         router.push('/admin/dashboard')
-      } else {
-        // No valid role found, redirect to login
-        toast({
-          variant: "destructive",
-          title: "Profil tidak valid",
-          description: "Akun Anda belum memiliki role yang valid",
-        })
-        await supabase.auth.signOut()
-        router.push('/login')
+      } else if (role === 'TECHNICIAN') {
+        router.push('/admin/dashboard') // ponytail: create /technician/dashboard when needed
       }
     } catch (error: any) {
       toast({

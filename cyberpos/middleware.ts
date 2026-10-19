@@ -63,10 +63,21 @@ export async function middleware(request: NextRequest) {
 
   const role = profile?.role
 
+  // If no profile or invalid role, redirect to login
+  if (!profile || !role || !['CUSTOMER', 'CASHIER', 'ADMIN', 'OWNER', 'TECHNICIAN'].includes(role)) {
+    console.error('Invalid or missing profile/role for user:', user.id, 'profile:', profile)
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
   // Customer routes - CUSTOMER only
   if (path.startsWith('/customer')) {
     if (role !== 'CUSTOMER') {
-      return NextResponse.redirect(new URL(role === 'CASHIER' ? '/cashier/dashboard' : '/admin/dashboard', request.url))
+      if (role === 'CASHIER') {
+        return NextResponse.redirect(new URL('/cashier/dashboard', request.url))
+      }
+      if (role === 'OWNER' || role === 'ADMIN' || role === 'TECHNICIAN') {
+        return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+      }
     }
     return response
   }
@@ -77,23 +88,22 @@ export async function middleware(request: NextRequest) {
       if (role === 'CUSTOMER') {
         return NextResponse.redirect(new URL('/customer/dashboard', request.url))
       }
-      if (role === 'OWNER' || role === 'ADMIN') {
+      if (role === 'OWNER' || role === 'ADMIN' || role === 'TECHNICIAN') {
         return NextResponse.redirect(new URL('/admin/dashboard', request.url))
       }
     }
     return response
   }
 
-  // Admin routes - OWNER and ADMIN only
+  // Admin routes - OWNER, ADMIN, and TECHNICIAN
   if (path.startsWith('/admin')) {
-    if (role !== 'OWNER' && role !== 'ADMIN') {
+    if (role !== 'OWNER' && role !== 'ADMIN' && role !== 'TECHNICIAN') {
       if (role === 'CUSTOMER') {
         return NextResponse.redirect(new URL('/customer/dashboard', request.url))
       }
       if (role === 'CASHIER') {
         return NextResponse.redirect(new URL('/cashier/dashboard', request.url))
       }
-      return NextResponse.redirect(new URL('/login', request.url))
     }
     return response
   }
@@ -106,10 +116,9 @@ export async function middleware(request: NextRequest) {
     if (role === 'CASHIER') {
       return NextResponse.redirect(new URL('/cashier/dashboard', request.url))
     }
-    if (role === 'OWNER' || role === 'ADMIN') {
+    if (role === 'OWNER' || role === 'ADMIN' || role === 'TECHNICIAN') {
       return NextResponse.redirect(new URL('/admin/dashboard', request.url))
     }
-    return NextResponse.redirect(new URL('/login', request.url))
   }
 
   return response
