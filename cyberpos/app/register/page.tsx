@@ -92,12 +92,15 @@ export default function RegisterPage() {
       
       if (profileError) {
         console.error('Profile verification error:', profileError)
-        throw new Error('Profil gagal dibuat. Silakan hubungi administrator.')
+        console.error('User ID:', data.user.id)
+        console.error('Full error:', JSON.stringify(profileError, null, 2))
+        throw new Error(`Profil gagal dibuat: ${profileError.message || 'Unknown error'}. Silakan hubungi administrator.`)
       }
       
       if (!profile) {
         console.error('Profile not found after registration for user:', data.user.id)
-        throw new Error('Profil tidak ditemukan. Silakan hubungi administrator.')
+        console.error('Auth user created but profile missing - trigger may have failed')
+        throw new Error('Profil tidak ditemukan setelah registrasi. Trigger database mungkin belum aktif. Silakan hubungi administrator.')
       }
 
       toast({
