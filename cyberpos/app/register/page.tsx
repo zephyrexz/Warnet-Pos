@@ -51,38 +51,67 @@ export default function RegisterPage() {
     try {
       const supabase = createClient()
       
-      // Register with Supabase Auth
+      // Register with Supabase Auth with metadata
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
+        options: {
+          data: {
+            full_name: formData.fullName,
+            username: formData.username,
+            phone: formData.phone,
+          },
+        },
       })
 
       if (error) throw error
       if (!data.user) throw new Error('Registrasi gagal')
 
-      // Manual profile creation via RPC to bypass RLS
+      // Create profile with CUSTOMER role via RPC
       const { error: rpcError } = await supabase.rpc('create_user_profile', {
         user_id: data.user.id,
         user_email: formData.email,
         user_full_name: formData.fullName,
         user_username: formData.username,
-        user_phone: formData.phone
+        user_phone: formData.phone || null
       })
 
-      if (rpcError) console.warn('Profile creation warning:', rpcError)
+      if (rpcError) {
+        console.error('Profile creation error:', rpcError)
+        throw new Error('Gagal membuat profil pengguna: ' + rpcError.message)
+      }
 
       toast({
         title: "Registrasi berhasil",
-        description: "Silakan login dengan akun Anda",
+        description: "Anda akan dialihkan ke dashboard...",
       })
 
-      router.push('/login')
+      // Refresh router to ensure session is available
+      router.refresh()
+
+      // Small delay for cookie propagation
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // Auto-login: redirect to customer dashboard
+      router.push('/customer/dashboard')
     } catch (error: any) {
       console.error('Registration error:', error)
+      
+      // Handle specific error cases
+      let errorMessage = error.message || "Terjadi kesalahan"
+      
+      if (error.message?.includes('already registered')) {
+        errorMessage = "Email sudah terdaftar"
+      } else if (error.message?.includes('invalid email')) {
+        errorMessage = "Format email tidak valid"
+      } else if (error.message?.includes('username')) {
+        errorMessage = "Username sudah digunakan"
+      }
+      
       toast({
         variant: "destructive",
         title: "Registrasi gagal",
-        description: error.message || "Terjadi kesalahan",
+        description: errorMessage,
       })
     } finally {
       setLoading(false)
