@@ -51,25 +51,54 @@ export default function RegisterPage() {
     try {
       const supabase = createClient()
       
+      // Normalize email
+      const normalizedEmail = formData.email.trim().toLowerCase()
+      
       // Register with Supabase Auth with metadata
       const { data, error } = await supabase.auth.signUp({
-        email: formData.email,
+        email: normalizedEmail,
         password: formData.password,
         options: {
           data: {
-            full_name: formData.fullName,
-            username: formData.username,
-            phone: formData.phone,
+            full_name: formData.fullName.trim(),
+            username: formData.username.trim(),
+            phone: formData.phone.trim(),
           },
         },
       })
 
       if (error) throw error
-      if (!data.user) throw new Error('Registrasi gagal')
+      
+      // Check if email is already registered
+      // When email exists, Supabase returns user but with empty identities array
+      if (data.user && (!data.user.identities || data.user.identities.length === 0)) {
+        throw new Error('Email ini sudah terdaftar. Silakan login atau gunakan fitur lupa password.')
+      }
+      
+      if (!data.user) {
+        throw new Error('Registrasi gagal. Silakan coba lagi.')
+      }
 
       // Profile created automatically by trigger handle_new_user()
-      // Wait for trigger to complete
-      await new Promise(resolve => setTimeout(resolve, 500))
+      // Wait for trigger to complete and verify profile was created
+      await new Promise(resolve => setTimeout(resolve, 800))
+      
+      // Verify profile was created
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, role')
+        .eq('id', data.user.id)
+        .maybeSingle()
+      
+      if (profileError) {
+        console.error('Profile verification error:', profileError)
+        throw new Error('Profil gagal dibuat. Silakan hubungi administrator.')
+      }
+      
+      if (!profile) {
+        console.error('Profile not found after registration for user:', data.user.id)
+        throw new Error('Profil tidak ditemukan. Silakan hubungi administrator.')
+      }
 
       toast({
         title: "Registrasi berhasil",
@@ -90,20 +119,24 @@ export default function RegisterPage() {
       // Handle specific error cases
       let errorMessage = error.message || "Terjadi kesalahan"
       
-      if (error.message?.includes('already registered')) {
-        errorMessage = "Email sudah terdaftar"
-      } else if (error.message?.includes('invalid email')) {
+      if (error.message?.includes('Email ini sudah terdaftar')) {
+        errorMessage = error.message
+      } else if (error.message?.includes('already registered') || error.message?.includes('User already registered')) {
+        errorMessage = "Email sudah terdaftar. Silakan login atau gunakan fitur lupa password."
+      } else if (error.message?.includes('invalid email') || error.message?.includes('Unable to validate email')) {
         errorMessage = "Format email tidak valid"
       } else if (error.message?.includes('username')) {
         errorMessage = "Username sudah digunakan"
+      } else if (error.message?.includes('Profil')) {
+        errorMessage = error.message
+      } else if (error.message?.includes('foreign key')) {
+        errorMessage = "Terjadi kesalahan sistem. Silakan coba lagi."
       }
       
       toast({
         variant: "destructive",
         title: "Registrasi gagal",
-        description: errorMessage.includes('foreign key') 
-          ? "Terjadi kesalahan sistem. Silakan coba lagi." 
-          : errorMessage,
+        description: errorMessage,
       })
     } finally {
       setLoading(false)

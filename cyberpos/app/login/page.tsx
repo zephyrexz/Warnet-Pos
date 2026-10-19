@@ -25,19 +25,38 @@ export default function LoginPage() {
 
     try {
       const supabase = createClient()
+      
+      // Normalize email
+      const normalizedEmail = email.trim().toLowerCase()
+      
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: normalizedEmail,
         password,
       })
 
       if (error) throw error
 
-      // Get user profile to check role
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.user.id)
-        .maybeSingle()
+      // Get user profile to check role with retry mechanism
+      let profile = null
+      let profileError = null
+      let retries = 3
+      
+      while (retries > 0 && !profile) {
+        const result = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', data.user.id)
+          .maybeSingle()
+        
+        profileError = result.error
+        profile = result.data
+        
+        if (!profile && retries > 1) {
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 300))
+        }
+        retries--
+      }
 
       if (profileError) {
         console.error('Profile query error:', profileError)
@@ -96,10 +115,22 @@ export default function LoginPage() {
         router.push('/admin/dashboard') // ponytail: create /technician/dashboard when needed
       }
     } catch (error: any) {
+      console.error('Login error:', error)
+      
+      let errorMessage = "Email atau password salah"
+      
+      if (error.message?.includes('Invalid login credentials')) {
+        errorMessage = "Email atau password salah"
+      } else if (error.message?.includes('Email not confirmed')) {
+        errorMessage = "Email belum diverifikasi. Silakan cek inbox Anda."
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      
       toast({
         variant: "destructive",
         title: "Login gagal",
-        description: error.message || "Email atau password salah",
+        description: errorMessage,
       })
     } finally {
       setLoading(false)
