@@ -67,10 +67,17 @@ export default function RegisterPage() {
         }),
       })
 
-      const result = await res.json()
+      // Selalu parse sebagai text dulu — hindari crash jika body kosong
+      const rawText = await res.text()
+      let result: { error?: string; success?: boolean } = {}
+      try {
+        result = rawText ? JSON.parse(rawText) : {}
+      } catch {
+        throw new Error(`Server error (${res.status}): respons tidak valid.`)
+      }
 
       if (!res.ok) {
-        throw new Error(result.error || 'Registrasi gagal.')
+        throw new Error(result.error || `Registrasi gagal (${res.status}).`)
       }
 
       // 2. Login langsung — akun sudah verified, session langsung terbentuk
