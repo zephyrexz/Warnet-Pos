@@ -50,95 +50,68 @@ export default function RegisterPage() {
 
     try {
       const supabase = createClient()
-      
-      // Normalize email
+
       const normalizedEmail = formData.email.trim().toLowerCase()
-      
-      // Register with Supabase Auth with metadata
-      const { data, error } = await supabase.auth.signUp({
-        email: normalizedEmail,
-        password: formData.password,
-        options: {
-          data: {
-            full_name: formData.fullName.trim(),
-            username: formData.username.trim(),
-            phone: formData.phone.trim(),
-          },
-        },
+
+      // 1. Kirim ke server-side API route yang pakai Admin API
+      //    → auto-verifikasi tanpa email konfirmasi
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email:     normalizedEmail,
+          password:  formData.password,
+          full_name: formData.fullName.trim(),
+          username:  formData.username.trim(),
+          phone:     formData.phone.trim(),
+        }),
       })
 
-      if (error) throw error
-      
-      // Check if email is already registered
-      // When email exists, Supabase returns user but with empty identities array
-      if (data.user && (!data.user.identities || data.user.identities.length === 0)) {
-        throw new Error('Email ini sudah terdaftar. Silakan login atau gunakan fitur lupa password.')
-      }
-      
-      if (!data.user) {
-        throw new Error('Registrasi gagal. Silakan coba lagi.')
+      const result = await res.json()
+
+      if (!res.ok) {
+        throw new Error(result.error || 'Registrasi gagal.')
       }
 
-      // Profile created automatically by trigger handle_new_user()
-      // Wait for trigger to complete and verify profile was created
-      await new Promise(resolve => setTimeout(resolve, 800))
-      
-      // Verify profile was created
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, role')
-        .eq('id', data.user.id)
-        .maybeSingle()
-      
-      if (profileError) {
-        console.error('Profile verification error:', profileError)
-        console.error('User ID:', data.user.id)
-        console.error('Full error:', JSON.stringify(profileError, null, 2))
-        throw new Error(`Profil gagal dibuat: ${profileError.message || 'Unknown error'}. Silakan hubungi administrator.`)
-      }
-      
-      if (!profile) {
-        console.error('Profile not found after registration for user:', data.user.id)
-        console.error('Auth user created but profile missing - trigger may have failed')
-        throw new Error('Profil tidak ditemukan setelah registrasi. Trigger database mungkin belum aktif. Silakan hubungi administrator.')
+      // 2. Login langsung — akun sudah verified, session langsung terbentuk
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email:    normalizedEmail,
+        password: formData.password,
+      })
+
+      if (signInError) {
+        // Akun berhasil dibuat tapi login gagal — arahkan ke login manual
+        toast({
+          title: 'Registrasi berhasil',
+          description: 'Silakan login dengan email dan password Anda.',
+        })
+        router.push('/login')
+        return
       }
 
       toast({
-        title: "Registrasi berhasil",
-        description: "Anda akan dialihkan ke dashboard...",
+        title: 'Registrasi berhasil',
+        description: 'Anda akan dialihkan ke dashboard...',
       })
 
-      // Refresh router to ensure session is available
       router.refresh()
-
-      // Small delay for cookie propagation
-      await new Promise(resolve => setTimeout(resolve, 100))
-
-      // Auto-login: redirect to customer dashboard
       router.push('/customer/dashboard')
     } catch (error: any) {
       console.error('Registration error:', error)
-      
-      // Handle specific error cases
-      let errorMessage = error.message || "Terjadi kesalahan"
-      
-      if (error.message?.includes('Email ini sudah terdaftar')) {
-        errorMessage = error.message
-      } else if (error.message?.includes('already registered') || error.message?.includes('User already registered')) {
-        errorMessage = "Email sudah terdaftar. Silakan login atau gunakan fitur lupa password."
-      } else if (error.message?.includes('invalid email') || error.message?.includes('Unable to validate email')) {
-        errorMessage = "Format email tidak valid"
-      } else if (error.message?.includes('username')) {
-        errorMessage = "Username sudah digunakan"
-      } else if (error.message?.includes('Profil')) {
-        errorMessage = error.message
-      } else if (error.message?.includes('foreign key')) {
-        errorMessage = "Terjadi kesalahan sistem. Silakan coba lagi."
+
+      let errorMessage: string = error.message || 'Terjadi kesalahan'
+
+      if (errorMessage.includes('sudah terdaftar') || errorMessage.includes('already')) {
+        errorMessage = 'Email sudah terdaftar. Silakan login atau gunakan fitur lupa password.'
+      } else if (errorMessage.includes('invalid email') || errorMessage.includes('validate email')) {
+        errorMessage = 'Format email tidak valid.'
+      } else if (errorMessage.includes('username')) {
+        errorMessage = 'Username sudah digunakan.'
       }
-      
+
       toast({
-        variant: "destructive",
-        title: "Registrasi gagal",
+        variant: 'destructive',
+        title: 'Registrasi gagal',
         description: errorMessage,
       })
     } finally {
