@@ -1,200 +1,166 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { formatCurrency } from "@/lib/utils"
-import { Computer, ShoppingCart, Clock, CheckCircle } from "lucide-react"
+import { getCashierDashboardStats } from "@/lib/actions/reports"
+import { DollarSign, ShoppingCart, Monitor, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
-export default async function CashierDashboard() {
+export default async function CashierDashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-
   if (!user) redirect('/login')
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('*')
+    .select('role, full_name')
     .eq('id', user.id)
     .single()
+  
+  if (profile?.role !== 'CASHIER' && profile?.role !== 'OWNER' && profile?.role !== 'ADMIN') {
+    redirect('/login')
+  }
 
-  if (profile?.role !== 'CASHIER') redirect('/login')
-
-  // Get stats
-  const { count: availableComputers } = await supabase
-    .from('computers')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'AVAILABLE')
-    .eq('is_active', true)
-
-  const { count: inUseComputers } = await supabase
-    .from('computers')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'IN_USE')
-
-  const { data: todayTransactions } = await supabase
-    .from('sales')
-    .select('total')
-    .gte('created_at', new Date().toISOString().split('T')[0])
-    .eq('payment_status', 'PAID')
-
-  const todayRevenue = todayTransactions?.reduce((sum, sale) => sum + Number(sale.total), 0) || 0
-
-  const { data: recentSessions } = await supabase
-    .from('computer_sessions')
-    .select(`
-      *,
-      computers (name, code),
-      profiles!computer_sessions_customer_id_fkey (full_name)
-    `)
-    .is('ended_at', null)
-    .order('started_at', { ascending: false })
-    .limit(6)
-
-  const { data: upcomingReservations } = await supabase
-    .from('reservations')
-    .select(`
-      *,
-      computers (name, code),
-      profiles!reservations_customer_id_fkey (full_name)
-    `)
-    .in('status', ['PENDING', 'CONFIRMED'])
-    .gte('start_time', new Date().toISOString())
-    .order('start_time', { ascending: true })
-    .limit(5)
+  const stats = await getCashierDashboardStats()
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Dashboard Kasir</h2>
-          <p className="text-muted-foreground mt-1">
-            Selamat datang, {profile.full_name}
-          </p>
-        </div>
-        <Button asChild size="lg">
-          <Link href="/cashier/pos">
-            <ShoppingCart className="mr-2 h-5 w-5" />
-            Buka POS
-          </Link>
-        </Button>
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">Dashboard Kasir</h2>
+        <p className="text-muted-foreground mt-1">Selamat datang, {profile.full_name}</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Komputer Tersedia</CardTitle>
-            <Computer className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{availableComputers}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Siap digunakan
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sedang Digunakan</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{inUseComputers}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Komputer aktif
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Transaksi Hari Ini</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{todayTransactions?.length || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Total transaksi
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pendapatan Hari Ini</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(todayRevenue)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Total pendapatan
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+      {!stats.shift ? (
+        <Card className="border-orange-200 bg-orange-50">
           <CardHeader>
-            <CardTitle>Sesi Aktif</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-orange-600" />
+              Shift Belum Dibuka
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            {recentSessions && recentSessions.length > 0 ? (
-              <div className="space-y-3">
-                {recentSessions.map((session: any) => (
-                  <div key={session.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                    <div>
-                      <p className="font-medium">{session.computers?.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {session.profiles?.full_name || 'Walk-in'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Mulai: {new Date(session.started_at).toLocaleTimeString('id-ID')}
-                      </p>
-                    </div>
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href="/cashier/billing">Detail</Link>
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center text-sm text-muted-foreground py-4">Tidak ada sesi aktif</p>
-            )}
+            <p className="text-sm text-muted-foreground mb-4">
+              Anda perlu membuka shift terlebih dahulu untuk memulai transaksi
+            </p>
+            <Link href="/cashier/shifts">
+              <Button>Buka Shift</Button>
+            </Link>
           </CardContent>
         </Card>
+      ) : (
+        <>
+          {/* Shift Stats */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Transaksi</CardTitle>
+                <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.stats.total_transactions}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Pendapatan</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  Rp {stats.stats.total_revenue.toLocaleString('id-ID')}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Transaksi Tunai</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.stats.cash_sales}</div>
+              </CardContent>
+            </Card>
+          </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Reservasi Mendatang</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {upcomingReservations && upcomingReservations.length > 0 ? (
-              <div className="space-y-3">
-                {upcomingReservations.map((reservation: any) => (
-                  <div key={reservation.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                    <div>
-                      <p className="font-medium">{reservation.profiles?.full_name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {reservation.computers?.name || 'Belum ditentukan'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(reservation.start_time).toLocaleString('id-ID')}
-                      </p>
-                    </div>
-                    <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded">
-                      {reservation.status}
-                    </span>
-                  </div>
-                ))}
+          {/* Shift Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Informasi Shift</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Dibuka Pada</span>
+                <span className="font-medium">
+                  {new Date(stats.shift.opened_at).toLocaleString('id-ID')}
+                </span>
               </div>
-            ) : (
-              <p className="text-center text-sm text-muted-foreground py-4">Tidak ada reservasi mendatang</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Saldo Awal</span>
+                <span className="font-medium">
+                  Rp {Number(stats.shift.opening_balance).toLocaleString('id-ID')}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Available Computers */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Komputer Tersedia</span>
+                <Badge variant="outline">{stats.available_computers.length} unit</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {stats.available_computers.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Semua komputer sedang digunakan
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {stats.available_computers.map((comp: any) => (
+                    <div key={comp.id} className="border rounded-lg p-3 text-center">
+                      <Monitor className="h-8 w-8 mx-auto mb-2 text-green-600" />
+                      <p className="font-semibold text-sm">{comp.name}</p>
+                      <p className="text-xs text-muted-foreground">{comp.code}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Quick Actions */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <Link href="/cashier/pos">
+              <Card className="cursor-pointer hover:bg-gray-50 transition-colors">
+                <CardContent className="pt-6">
+                  <div className="text-center">
+                    <ShoppingCart className="h-12 w-12 mx-auto mb-3 text-blue-600" />
+                    <h3 className="font-semibold text-lg">Point of Sale</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Jual produk dan kelola pembayaran
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link href="/cashier/billing">
+              <Card className="cursor-pointer hover:bg-gray-50 transition-colors">
+                <CardContent className="pt-6">
+                  <div className="text-center">
+                    <Monitor className="h-12 w-12 mx-auto mb-3 text-green-600" />
+                    <h3 className="font-semibold text-lg">Billing Komputer</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Kelola sesi komputer
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+        </>
+      )}
     </div>
   )
 }
