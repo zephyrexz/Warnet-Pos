@@ -2,13 +2,49 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LucideIcon } from 'lucide-react'
+import { 
+  LayoutDashboard, 
+  Computer, 
+  CreditCard, 
+  ShoppingCart, 
+  Package, 
+  Users, 
+  Settings, 
+  FileText, 
+  DollarSign,
+  TrendingUp,
+  UserCog,
+  ClipboardList,
+  Wrench,
+  Clock,
+  Wallet,
+  User
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+const iconMap = {
+  LayoutDashboard,
+  Computer,
+  CreditCard,
+  ShoppingCart,
+  Package,
+  Users,
+  Settings,
+  FileText,
+  DollarSign,
+  TrendingUp,
+  UserCog,
+  ClipboardList,
+  Wrench,
+  Clock,
+  Wallet,
+  User
+} as const
 
 export interface NavItem {
   href: string
   label: string
-  icon: LucideIcon
+  icon: keyof typeof iconMap
   badge?: string
 }
 
@@ -40,7 +76,7 @@ export function Sidebar({ groups, collapsed = false }: SidebarProps) {
             )}
             <div className="space-y-1">
               {group.items.map((item) => {
-                const Icon = item.icon
+                const Icon = iconMap[item.icon]
                 const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
                 
                 return (

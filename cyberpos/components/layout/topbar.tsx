@@ -71,7 +71,6 @@ export function Topbar({ title, profile, mobileNav = [] }: TopbarProps) {
                       )}
                       <div className="space-y-1">
                         {group.items.map((item) => {
-                          const Icon = item.icon
                           return (
                             <Link
                               key={item.href}
@@ -79,7 +78,6 @@ export function Topbar({ title, profile, mobileNav = [] }: TopbarProps) {
                               onClick={() => setMobileOpen(false)}
                               className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                             >
-                              <Icon className="h-5 w-5" />
                               <span>{item.label}</span>
                             </Link>
                           )

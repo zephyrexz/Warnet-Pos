@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Topbar } from '@/components/layout/topbar'
 import { Sidebar } from '@/components/layout/sidebar'
-import { LayoutDashboard, Computer, CreditCard, Wallet, Clock, User } from 'lucide-react'
 
 interface CustomerLayoutProps {
   children: React.ReactNode
@@ -64,12 +63,12 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
   const navGroups = [
     {
       items: [
-        { href: '/customer/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { href: '/customer/reservations', label: 'Reservasi', icon: Computer },
-        { href: '/customer/transactions', label: 'Transaksi', icon: CreditCard },
-        { href: '/customer/history', label: 'Riwayat', icon: Clock },
-        { href: '/customer/wallet', label: 'Wallet', icon: Wallet },
-        { href: '/customer/profile', label: 'Profil', icon: User },
+        { href: '/customer/dashboard', label: 'Dashboard', icon: 'LayoutDashboard' as const },
+        { href: '/customer/reservations', label: 'Reservasi', icon: 'Computer' as const },
+        { href: '/customer/transactions', label: 'Transaksi', icon: 'CreditCard' as const },
+        { href: '/customer/history', label: 'Riwayat', icon: 'Clock' as const },
+        { href: '/customer/wallet', label: 'Wallet', icon: 'Wallet' as const },
+        { href: '/customer/profile', label: 'Profil', icon: 'User' as const },
       ]
     },
   ]
