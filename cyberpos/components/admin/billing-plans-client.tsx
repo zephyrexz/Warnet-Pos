@@ -250,7 +250,11 @@ export default function BillingPlansClient({
                   <Label htmlFor="billing_type">Tipe Billing *</Label>
                   <Select 
                     value={formData.billing_type} 
-                    onValueChange={(v: 'PREPAID' | 'POSTPAID') => setFormData({ ...formData, billing_type: v })}
+                    onValueChange={(value: string) => {
+                      if (value === 'PREPAID' || value === 'POSTPAID') {
+                        setFormData({ ...formData, billing_type: value })
+                      }
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue />

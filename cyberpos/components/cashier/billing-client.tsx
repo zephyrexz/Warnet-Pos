@@ -34,6 +34,7 @@ type Computer = {
   computer_sessions?: Array<{
     id: string
     started_at: string
+    ended_at?: string | null
     hourly_rate: number
     profiles?: { full_name: string }
   }>

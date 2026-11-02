@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { getCashierDashboardStats } from "@/lib/actions/reports"
 import { DollarSign, ShoppingCart, Monitor, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -57,7 +58,7 @@ export default async function CashierDashboardPage() {
                 <ShoppingCart className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.stats.total_transactions}</div>
+                <div className="text-2xl font-bold">{stats.stats?.total_transactions ?? 0}</div>
               </CardContent>
             </Card>
             <Card>
@@ -67,7 +68,7 @@ export default async function CashierDashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  Rp {stats.stats.total_revenue.toLocaleString('id-ID')}
+                  Rp {(stats.stats?.total_revenue ?? 0).toLocaleString('id-ID')}
                 </div>
               </CardContent>
             </Card>
@@ -76,7 +77,7 @@ export default async function CashierDashboardPage() {
                 <CardTitle className="text-sm font-medium">Transaksi Tunai</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.stats.cash_sales}</div>
+                <div className="text-2xl font-bold">{stats.stats?.cash_sales ?? 0}</div>
               </CardContent>
             </Card>
           </div>
@@ -107,17 +108,17 @@ export default async function CashierDashboardPage() {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>Komputer Tersedia</span>
-                <Badge variant="outline">{stats.available_computers.length} unit</Badge>
+                <Badge variant="outline">{stats.available_computers?.length ?? 0} unit</Badge>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {stats.available_computers.length === 0 ? (
+              {(stats.available_computers?.length ?? 0) === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
                   Semua komputer sedang digunakan
                 </p>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {stats.available_computers.map((comp: any) => (
+                  {stats.available_computers?.map((comp: any) => (
                     <div key={comp.id} className="border rounded-lg p-3 text-center">
                       <Monitor className="h-8 w-8 mx-auto mb-2 text-green-600" />
                       <p className="font-semibold text-sm">{comp.name}</p>
