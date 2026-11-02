@@ -1,23 +1,9 @@
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getDashboardStats } from "@/lib/actions/reports"
 import { Computer, Monitor, Users, TrendingUp, AlertTriangle, Calendar } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
 export default async function AdminDashboardPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-  
-  if (profile?.role !== 'OWNER' && profile?.role !== 'ADMIN') redirect('/login')
-
   const stats = await getDashboardStats()
 
   const statusColors: Record<string, string> = {

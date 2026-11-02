@@ -1,8 +1,4 @@
-'use client'
-
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { requireRole } from '@/lib/auth-helpers'
 import { Topbar } from '@/components/layout/topbar'
 import { Sidebar } from '@/components/layout/sidebar'
 import { 
@@ -25,55 +21,8 @@ interface AdminLayoutProps {
   children: React.ReactNode
 }
 
-export default function AdminLayout({ children }: AdminLayoutProps) {
-  const [profile, setProfile] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const router = useRouter()
-
-  useEffect(() => {
-    const getProfile = async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        router.push('/login')
-        return
-      }
-
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-
-      if (data?.role !== 'OWNER' && data?.role !== 'ADMIN') {
-        if (data?.role === 'CUSTOMER') {
-          router.push('/customer/dashboard')
-        } else if (data?.role === 'CASHIER') {
-          router.push('/cashier/dashboard')
-        } else {
-          router.push('/login')
-        }
-        return
-      }
-
-      setProfile(data)
-      setLoading(false)
-    }
-
-    getProfile()
-  }, [router])
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-muted/30">
-        <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
-          <p className="text-sm text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    )
-  }
+export default async function AdminLayout({ children }: AdminLayoutProps) {
+  const profile = await requireRole(['OWNER', 'ADMIN'])
 
   const navGroups = [
     {
